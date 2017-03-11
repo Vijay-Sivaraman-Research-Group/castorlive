@@ -57,6 +57,7 @@ public class DistributedCastorStore implements CastorStore {
     private ConsistentMap<IpAddress, MacAddress> addressMap;
     private ConsistentMap<Key, PointToPointIntent> peerIntents;
     private ConsistentMap<String, MultiPointToSinglePointIntent> layer2Intents;
+    private ConsistentMap<String, MultiPointToSinglePointIntent> arpIntents;
     private DistributedSet<Peer> allPeers;
     private DistributedSet<Peer> customers;
     private DistributedSet<Peer> routeServers;
@@ -77,6 +78,11 @@ public class DistributedCastorStore implements CastorStore {
 
         layer2Intents = storageService.<String, MultiPointToSinglePointIntent>consistentMapBuilder()
                 .withName("castor-layer2Intents")
+                .withSerializer(Serializer.using(KryoNamespaces.API))
+                .build();
+
+        arpIntents = storageService.<String, MultiPointToSinglePointIntent>consistentMapBuilder()
+                .withName("castor-arpIntents")
                 .withSerializer(Serializer.using(KryoNamespaces.API))
                 .build();
 
@@ -208,6 +214,11 @@ public class DistributedCastorStore implements CastorStore {
     }
 
     @Override
+    public void removeOnlyCustomer(Peer peer) {
+        customers.remove(peer);
+    }
+
+    @Override
     public void removePeerIntent(Key key) {
         peerIntents.remove(key);
 
@@ -218,5 +229,25 @@ public class DistributedCastorStore implements CastorStore {
         layer2Intents.remove(key);
 
     }
+
+    @Override
+    public Map<String, MultiPointToSinglePointIntent> getArpIntents() {
+        Map<String, MultiPointToSinglePointIntent> validMapping = new HashMap<>();
+        for (Map.Entry<String, Versioned<MultiPointToSinglePointIntent>> entry: arpIntents.entrySet()) {
+            validMapping.put(entry.getKey(), entry.getValue().value());
+        }
+        return validMapping;
+    }
+
+    @Override
+    public void storeArpIntent(String key, MultiPointToSinglePointIntent intent) {
+        arpIntents.put(key, intent);
+    }
+
+    @Override
+    public void removeArpIntent(String key) {
+        arpIntents.remove(key);
+    }
+
 }
 

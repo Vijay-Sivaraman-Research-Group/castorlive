@@ -15,8 +15,6 @@
  */
 package org.onosproject.castor;
 
-import org.onosproject.net.packet.PacketContext;
-
 /**
  * Interface for processing and handling ARP related events.
  */
@@ -30,10 +28,18 @@ public interface ArpService {
     void createArp(Peer peer);
 
     /**
-     * Handles the ARP packet in.
+     * Set up the ARP unicast rules for the Peer.
      *
-     * @param context packet context to handle
-     * @return true if handled
+     * @param peer A Peer
      */
-    boolean handlePacket(PacketContext context);
+    void setUpArp(Peer peer);
+
+    /**
+     * Deletes the ARP unicast rules of the Peer being deleted.
+     *
+     * @param peer Peer being deleted.
+     */
+    void deleteArp(Peer peer);
+
+    void setArpRouteServer();
 }

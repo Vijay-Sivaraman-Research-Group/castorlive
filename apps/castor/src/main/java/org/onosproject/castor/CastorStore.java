@@ -117,6 +117,21 @@ public interface CastorStore {
     void storeLayer2Intent(String key, MultiPointToSinglePointIntent intent);
 
     /**
+     * Returns ARP Intents.
+     *
+     * @return MultiPointToSinglePointIntent
+     */
+    Map<String, MultiPointToSinglePointIntent> getArpIntents();
+
+    /**
+     * Stores an ARP Intent.
+     *
+     * @param key Key
+     * @param intent The Intent
+     */
+    void storeArpIntent(String key, MultiPointToSinglePointIntent intent);
+
+    /**
      * Returns the mapping of Customer names to their IP address.
      *
      * @return HashMap
@@ -129,6 +144,8 @@ public interface CastorStore {
      * @param peer The Customer
      */
     void removeCustomer(Peer peer);
+
+    void removeOnlyCustomer(Peer peer);
 
     /**
      * Removes a peer intent from the store.
@@ -143,4 +160,11 @@ public interface CastorStore {
      * @param key Key for intent
      */
     void removeLayer2Intent(String key);
+
+    /**
+     * Removes the ARP Intent from the Store.
+     *
+     * @param key Key
+     */
+    void removeArpIntent(String key);
 }

@@ -325,7 +325,7 @@ public class ConnectivityManager implements ConnectivityManagerService {
         ConnectPoint egressPort = ConnectPoint.deviceConnectPoint(peer.getPort());
 
         for (Peer inPeer : castorStore.getAllPeers()) {
-            if (!inPeer.getName().equals(peer.getName())) {
+            if (!inPeer.equals(peer)) {
                 ingressPorts.add(ConnectPoint.deviceConnectPoint(inPeer.getPort()));
             }
         }
@@ -346,7 +346,7 @@ public class ConnectivityManager implements ConnectivityManagerService {
                 .build();
         intentSynchronizer.submit(intent);
         castorStore.storeLayer2Intent(peer.getIpAddress(), intent);
-        castorStore.removeCustomer(peer);
+        castorStore.removeOnlyCustomer(peer);
         peer.setL2(true);
         castorStore.storeCustomer(peer);
     }
@@ -365,6 +365,11 @@ public class ConnectivityManager implements ConnectivityManagerService {
 
             Set<ConnectPoint> ingressPoints = oldIntent.ingressPoints();
             ConnectPoint egressPoint = oldIntent.egressPoint();
+
+            if(ConnectPoint.deviceConnectPoint(peer.getPort()).equals(egressPoint)) {
+                continue;
+            }
+
             if (ingressPoints.add(ConnectPoint.deviceConnectPoint(peer.getPort()))) {
 
                 MultiPointToSinglePointIntent updatedMp2pIntent =
@@ -379,8 +384,13 @@ public class ConnectivityManager implements ConnectivityManagerService {
                                 .build();
 
                 //layer2Intents.put(peer.getIpAddress(), updatedMp2pIntent);
-                castorStore.storeLayer2Intent(peer.getIpAddress(), updatedMp2pIntent);
+
                 intentSynchronizer.submit(updatedMp2pIntent);
+
+                ConnectPoint oldConnectPoint = oldIntent.egressPoint();
+                String storeKey = getMatchingAddressByConnectPoint(oldConnectPoint);
+
+                castorStore.storeLayer2Intent(storeKey, updatedMp2pIntent);
             }
         }
     }
@@ -396,6 +406,7 @@ public class ConnectivityManager implements ConnectivityManagerService {
                 if (customer.getIpAddress().equals(peer.getIpAddress()) && customer.getl2Status()) {
                     deleteL2(customer);
                     updateL2AfterDeletion(customer);
+                    castorStore.removeOnlyCustomer(customer);
                 }
             }
             castorStore.removeCustomer(peer);
@@ -454,6 +465,7 @@ public class ConnectivityManager implements ConnectivityManagerService {
 
             Set<ConnectPoint> ingressPoints = oldIntent.ingressPoints();
             ConnectPoint egressPoint = oldIntent.egressPoint();
+
             if (ingressPoints.remove(ConnectPoint.deviceConnectPoint(peer.getPort()))) {
 
                 MultiPointToSinglePointIntent updatedMp2pIntent =
@@ -467,12 +479,27 @@ public class ConnectivityManager implements ConnectivityManagerService {
                                 .priority(oldIntent.priority())
                                 .build();
 
-                intents.put(peer.getIpAddress(), updatedMp2pIntent);
+                ConnectPoint oldConnectPoint = oldIntent.egressPoint();
+                String storeKey = getMatchingAddressByConnectPoint(oldConnectPoint);
+
+                intents.put(storeKey, updatedMp2pIntent);
                 intentSynchronizer.submit(updatedMp2pIntent);
             }
         }
         for (String key : intents.keySet()) {
             castorStore.storeLayer2Intent(key, intents.get(key));
         }
+    }
+
+    private String getMatchingAddressByConnectPoint (ConnectPoint cp) {
+
+        for (Peer peer : castorStore.getCustomers()) {
+
+            if(cp.equals(ConnectPoint.deviceConnectPoint(peer.getPort()))) {
+                return peer.getIpAddress();
+            }
+        }
+        return null;
+
     }
 }

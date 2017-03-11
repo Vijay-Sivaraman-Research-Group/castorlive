@@ -81,6 +81,8 @@ public class CastorWebResource  extends AbstractWebResource {
             ObjectMapper mapper = new ObjectMapper();
             Peer peer = mapper.readValue(incomingData, Peer.class);
             get(ConnectivityManagerService.class).setUpConnectivity(peer);
+            get(ArpService.class).setUpArp(peer);
+            get(ArpService.class).setArpRouteServer();
             if ((get(CastorStore.class)).getAddressMap()
                     .get(IpAddress.valueOf(peer.getIpAddress())) != null) {
                 get(ConnectivityManagerService.class).setUpL2(peer);
@@ -117,6 +119,8 @@ public class CastorWebResource  extends AbstractWebResource {
             ObjectMapper mapper = new ObjectMapper();
             Peer peer = mapper.readValue(incomingData, Peer.class);
             get(ConnectivityManagerService.class).deletePeer(peer);
+            get(ArpService.class).deleteArp(peer);
+            get(ArpService.class).setArpRouteServer();
         } catch (Exception e) {
             e.printStackTrace();
             return Response.status(500).entity("Unable to delete the peer").build();
